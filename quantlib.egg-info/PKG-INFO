@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: quantlib
+Version: 0.1
+Summary: quantlib by slavko
+Home-page: #
+Author: Slavko Muzdeka
+Author-email: 
+Requires-Dist: opencv-python
