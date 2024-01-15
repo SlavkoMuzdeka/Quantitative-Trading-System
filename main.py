@@ -1,9 +1,19 @@
-import quantlib.data as du
 import quantlib.general_utils as gu
+from subsystems.lbmom.subsys import Lbmom
 
-# df, instruments = du.get_sp500_df()
-# df = du.extend_dataframe(traded=instruments, df=df)
-# gu.save_file("./Data/data.obj", (df, instruments))
+from dateutil.relativedelta import relativedelta
 
 (df, instruments) = gu.load_file("./Data/data.obj")
 print(instruments)
+
+VOL_TARGET = 0.20  # we are targetting 20% annualized vol
+
+sim_start = df.index[-1] - relativedelta(years=5)
+
+start = Lbmom(
+    instruments_config="./subsystems/lbmom/config.json",
+    historical_df=df,
+    simulation_start=sim_start,
+    vol_target=VOL_TARGET,
+)
+start.get_subsys_pos()

@@ -43,6 +43,8 @@ def get_sp500_df():
     return df, instruments
 
 
+# we want our object types to be the same, for instance things like dataframe index 'type' or class
+# should be the same
 def format_date(dates):
     yymmdd = list(map(lambda x: int(x), str(dates).split(" ")[0].split("-")))
     return datetime.date(yymmdd[0], yymmdd[1], yymmdd[2])
@@ -81,13 +83,6 @@ def extend_dataframe(traded, df):
     historical_data.bfill(inplace=True)
     return historical_data
 
-
-# df, instruments = get_sp500_df()
-# historical_data = extend_dataframe(instruments, df)
-# if "date" in df.index.names:
-#     df.index = pd.to_datetime(df.index.get_level_values("date")).tz_convert(None)
-#     df.to_excel("hist.xlsx")
-#     print(historical_data)
 
 # we have used backfill and forward fill functions to fill missing data
 # for instance, some of the options for filling in missing data includes
