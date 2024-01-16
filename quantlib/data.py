@@ -58,6 +58,7 @@ def get_sp500_df():
         columns = list(map(lambda x: "{} {}".format(inst, x), inst_df.columns))
         # add the instrument name to each column
         df[columns] = inst_df
+
     return df, instruments
 
 
