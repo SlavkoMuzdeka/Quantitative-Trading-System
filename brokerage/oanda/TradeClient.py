@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+import datetime
 
 import oandapyV20
 import oandapyV20.endpoints.orders as orders
@@ -23,7 +24,9 @@ class TradeClient:
                 "account"
             ]
         except Exception as err:
-            pass
+            raise Exception(
+                "Some err message from account details: {}".format(str(err))
+            )
 
     def get_account_instruments(self):
         try:
@@ -49,22 +52,31 @@ class TradeClient:
                     currencies.append(inst_name)
                 elif type == "METAL":
                     metals.append(inst_name)
+            return instruments, currencies, cfds, metals
         except Exception as err:
-            print(err)
+            raise Exception(
+                "Some err message from account instruments: {}".format(str(err))
+            )
 
     def get_account_summary(self):
         try:
-            return self.client.request(accounts.AccountSummary(accountID=self.id))
+            return self.client.request(accounts.AccountSummary(accountID=self.id))[
+                "account"
+            ]
         except Exception as err:
-            raise Exception("Some err message from acc summary: {}".format(str(err)))
+            raise Exception(
+                "Some err message from account summary: {}".format(str(err))
+            )
 
     def get_account_capital(self):
         try:
             return float(self.get_account_summary()["NAV"])
         except Exception as err:
-            pass
+            raise Exception(
+                "Some err message from account capital: {}".format(str(err))
+            )
 
-    def get_account_position(self):
+    def get_account_positions(self):
         positions_data = self.get_account_details()["positions"]
         positions = {}
         for entry in positions_data:
@@ -78,10 +90,10 @@ class TradeClient:
 
     def get_account_trades(self):
         try:
-            trades = self.client.request(trades.OpenTrades(accountID=self.id))
-
+            results = self.client.request(trades.OpenTrades(accountID=self.id))
+            return results
         except Exception as err:
-            pass
+            raise Exception("Some err message from account trades: {}".format(str(err)))
 
     def is_tradable(self, inst):
         try:
@@ -91,7 +103,7 @@ class TradeClient:
             is_tradable = res["prices"][0]["tradeable"]
             return is_tradable
         except Exception as err:
-            print(err)
+            raise Exception("Some err message from is tradable: {}".format(str(err)))
 
     def get_account_orders(self):
         pass
@@ -99,8 +111,31 @@ class TradeClient:
     def get_endpoint(self, inst):
         pass
 
-    def get_ohlcv(self, instrument, const, granularity):
-        pass
+    def format_date(self, series):
+        yymmdd = series.split("T")[0].split("-")
+        return datetime.date(int(yymmdd[0]), int(yymmdd[1]), int(yymmdd[2]))
+
+    def get_ohlcv(self, instrument, count, granularity):
+        try:
+            params = {"count": count, "granularity": granularity}
+            candles = instruments.InstrumentsCandles(
+                instrument=instrument, params=params
+            )
+            self.client.request(candles)
+            ohlc_dict = candles.response["candles"]
+            ohlc = pd.DataFrame(ohlc_dict)
+            ohlc = ohlc[ohlc["complete"]]
+            ohlc_df = ohlc["mid"].dropna().apply(pd.Series)
+            ohlc_df["volume"] = ohlc["volume"]
+            ohlc_df.index = ohlc["time"]
+            ohlc_df = ohlc_df.apply(pd.to_numeric)
+            ohlc_df.reset_index(inplace=True)
+            ohlc_df.columns = ["date", "open", "high", "low", "close", "volume"]
+            ohlc_df["date"] = ohlc_df["date"].apply(lambda x: self.format_date(x))
+            print(ohlc_df)
+            # return candles.response
+        except Exception as err:
+            raise Exception("Some err message from get ohlcv: {}".format(str(err)))
 
     def market_order(self, inst, order_config={}):
         pass

@@ -1,3 +1,4 @@
 env
 __pycache__
 libraries
+config/auth_config.json
