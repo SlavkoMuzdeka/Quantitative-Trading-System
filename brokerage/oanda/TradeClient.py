@@ -12,6 +12,13 @@ import oandapyV20.endpoints.instruments as instruments
 
 
 class TradeClient:
+    """
+    The class TradeClient provides code with methods to interact
+    with an OANDA trading account, retreive account infromation,
+    check tradability of instruments, fetch OHLCV data and perform
+    other trading-related operations
+    """
+
     def __init__(self, auth_config):
         self.id = auth_config["oan_acc_id"]
         self.token = auth_config["oan_token"]
@@ -132,8 +139,7 @@ class TradeClient:
             ohlc_df.reset_index(inplace=True)
             ohlc_df.columns = ["date", "open", "high", "low", "close", "volume"]
             ohlc_df["date"] = ohlc_df["date"].apply(lambda x: self.format_date(x))
-            print(ohlc_df)
-            # return candles.response
+            return ohlc_df
         except Exception as err:
             raise Exception("Some err message from get ohlcv: {}".format(str(err)))
 

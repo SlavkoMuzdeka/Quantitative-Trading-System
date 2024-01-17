@@ -74,7 +74,7 @@ def format_date(dates):
 
 # takes an arbitrary dataframe with "inst o/h/l/c/v" and appends data + other numerical stats
 # for use throuhgt the system
-def extend_dataframe(traded, df):
+def extend_dataframe(traded, df, fx_codes):
     """
     Function extends a DataFrame containing OHLCV data for multiple instruments by adding
     columns with additional statistics related to percentage returns, return volatility
