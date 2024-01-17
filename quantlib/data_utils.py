@@ -99,6 +99,9 @@ def extend_dataframe(traded, df, fx_codes):
     # Forward fill missing values in the DataFrame
     historical_data.ffill(inplace=True)
 
+    # Back fill missing values in the DataFrame
+    historical_data.bfill(inplace=True)
+
     # Iterate through each instrument and calculate additional statistics
     for inst in traded:
         # Calculate percentage return
@@ -118,16 +121,31 @@ def extend_dataframe(traded, df, fx_codes):
             "{} close".format(inst)
         ] != historical_data["{} close".format(inst)].shift(1)
 
-    # Back fill missing values in the DataFrame
-    historical_data.bfill(inplace=True)
+        if is_fx(inst, fx_codes):
+            inst_rev = "{}_{}".format(inst.split("_")[1], inst.split("_")[0])
+            historical_data["{} close".format(inst_rev)] = (
+                1 / historical_data["{} close".format(inst)]
+            )
+            historical_data["{} % ret".format(inst_rev)] = (
+                historical_data["{} close".format(inst_rev)]
+                / historical_data["{} close".format(inst_rev)].shift(1)
+                - 1
+            )
+            historical_data["{} % ret vol".format(inst_rev)] = (
+                historical_data["{} % ret".format(inst_rev)].rolling(25).std()
+            )
+
+            historical_data["{} active".format(inst_rev)] = historical_data[
+                "{} close".format(inst_rev)
+            ] != historical_data["{} close".format(inst_rev)].shift(1)
+
     return historical_data
 
 
-# we have used backfill and forward fill functions to fill missing data
-# for instance, some of the options for filling in missing data includes
-"""
-1. Forwardfill then Backfill
-2. Brownian motion / Brownian Bridge
-3. GARCH. GARCH variants and Copulas
-4. Synthetic Data, such as through GAN and Stohastic Volatility Neural Networks
-"""
+def is_fx(inst, fx_codes):
+    # e.g EUR_USD, USD_SGD
+    return (
+        len(inst.split("_")) == 2
+        and inst.split("_")[0] in fx_codes
+        and inst.split("_")[1] in fx_codes
+    )

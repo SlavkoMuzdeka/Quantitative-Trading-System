@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import json
 import quantlib.indicators_cal as indicators_cal
-import quantlib.backtest_utils as backtest_utils
+import quantlib.backtest_utils as bu
 
 """
 # About volatility read this post: 
@@ -49,14 +49,7 @@ class Lbmom:
         with open(instruments_config) as f:
             self.instruments_config = json.load(f)
 
-    # A function to get extra indicators specific to this strategy
-    # A function to run a backtest/get positions from this strategy
-
     def extend_historicals(self, instruments, historical_data):
-        # this will be the moving average crossover, such that if the fastMA crossover the slowMA, then it is a buy
-        # a long-biased momentum strategy is biased in the long direction, so this will be a 100/0 L/S strategy
-        # we also use a filter to identify false positive signals (we use the average directional index, or the adx)
-
         for inst in instruments:
             # Calculate Average Directional Index (ADX)
             historical_data["{} adx".format(inst)] = indicators_cal.adx_series(
@@ -77,8 +70,12 @@ class Lbmom:
         return historical_data
 
     def run_simulation(self, historical_data):
-        # Initialization
-        instruments = self.instruments_config["instruments"]
+        """
+        Init & Pre-process
+        """
+        instruments = (
+            self.instruments_config["indices"] + self.instruments_config["bonds"]
+        )
 
         # Calculate/pre-process indicators
         historical_data = self.extend_historicals(
@@ -98,10 +95,6 @@ class Lbmom:
             )
             and (~historical_data[:date].tail(5)["{} active".format(inst)]).all()
         )
-        # recall that active is when the closing price of today is different from yesterday
-        # if it is not changing for more than 5 days, consider it to be halted from trading
-        # exclude it from the trading universe or assign weight to 0
-
         """
         Position Sizing with 3 different techniques combined:
             1. Strategy Level scalar for strategy level risk exposure
@@ -122,12 +115,14 @@ class Lbmom:
             """
             if i != 0:
                 date_prev = portfolio_df.loc[i - 1, "date"]
-                pnl = backtest_utils.get_backtest_day_stats(
+                pnl = bu.get_backtest_day_stats(
                     portfolio_df, instruments, date, date_prev, i, historical_data
                 )
-                strat_scalar = backtest_utils.get_strat_scalar(
+                strat_scalar = bu.get_strat_scalar(
                     portfolio_df, 100, self.vol_target, i, strat_scalar
                 )
+
+            portfolio_df.loc[i, "strat scalar"] = strat_scalar
 
             """
             Get Positions for Traded Instruments, Assign 0 to Non-Traded
@@ -159,7 +154,7 @@ class Lbmom:
                 )
 
                 # volatility targetting
-                position_target = (
+                position_vol_target = (
                     (1 / len(tradable))
                     * portfolio_df.loc[i, "capital"]
                     * self.vol_target
@@ -171,23 +166,23 @@ class Lbmom:
                     historical_data.loc[date, "{} % ret vol".format(inst)]
                     if historical_data[:date].tail(25)["{} active".format(inst)].all()
                     else 0.025
-                )  # it says if the stock has been actively traded in the last 25 days for all days,
-                # then use the rolling volatility of stock returns, else use 2.5%. Why? Imagine if the stock
-                # is not active, trades like 1 1 1 1 1 2 1 1 1 1 2 1 1 1 and barely moves being halted on most days.
-                # This would blow up the standard deviation and if sizing is proportional to 1/std, then small std
-                # indicates postion blows up
-                # this is a risk hazard
-                dollar_volatility = inst_price * percent_ret_vol  # vol in dollar terms
-                position = strat_scalar * forecast * position_target / dollar_volatility
+                )
+
+                dollar_volatility = bu.unit_val_change(
+                    inst, inst_price * percent_ret_vol, historical_data, date
+                )
+                position = (
+                    strat_scalar * forecast * position_vol_target / dollar_volatility
+                )
                 portfolio_df.loc[i, "{} units".format(inst)] = position
                 nominal_total += abs(
-                    position * inst_price
+                    position * bu.unit_dollar_value(inst, historical_data, date)
                 )  # assuming all denominated in same currency
 
             for inst in tradable:
                 units = portfolio_df.loc[i, "{} units".format(inst)]
                 nominal_inst = abs(
-                    units * historical_data.loc[date, "{} close".format(inst)]
+                    units * bu.unit_dollar_value(inst, historical_data, date)
                 )
                 inst_w = nominal_inst / nominal_total
                 portfolio_df.loc[i, "{} w".format(inst)] = inst_w
@@ -202,21 +197,5 @@ class Lbmom:
         return portfolio_df
 
     def get_subsys_pos(self):
-        self.run_simulation(historical_data=self.historical_df)
-
-
-# from our main driver, we pass the dataframe into the LBMOM strategy, than let the LBMOM perform some
-# calculations using the quantlib indicators calculator
-# after the calculations, we pass into the simulator, where we can run some simulations and backtesting
-
-# we don't perform unnecessary calculations - we do general calc in the driver, such as returns. volatility etc
-# needed for all strategies then, indicators specific to start is done inside the strategy to save time
-# each strategy has a config file, so that we can control some parameters
-
-# we are also adopting a risk management technique at the asset and strategy level called
-# vol targeting, where we laver out capital in order to achieve a certain 'target' annualized
-# volatility and the relative allocations are inversely proportional to the volatility of the asset
-
-# the reasoning is simple: assume volatility is a proxy for risk, we want to assign a similar
-# amount of 'risk' to each position. We do not want any particular position to have outsized
-# impacts on the overall portfolio, hence the term volatility targetting
+        portfolio_df = self.run_simulation(historical_data=self.historical_df)
+        return portfolio_df

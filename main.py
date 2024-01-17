@@ -1,15 +1,17 @@
 import json
-import pandas as pd
+import datetime
 import quantlib.general_utils as gu
 import quantlib.data_utils as du
+
 from subsystems.lbmom.subsys import Lbmom
-
 from dateutil.relativedelta import relativedelta
-
 from brokerage.oanda.oanda import Oanda
 
 with open("config/auth_config.json") as f:
     auth_config = json.load(f)
+
+with open("config/portfolio_config.json") as f:
+    portfolio_config = json.load(f)
 
 with open("config/oan_config.json") as f:
     brokerage_config = json.load(f)
@@ -52,59 +54,20 @@ historical_data = du.extend_dataframe(
     traded=db_instruments, df=database_df, fx_codes=brokerage_config["fx_codes"]
 )
 
-exit()
-# 1. Get summary details
-# summary = trade_client.get_account_summary()
-# print(json.dumps(summary, indent=4))
+"""
+Risk Parameters
+"""
+vol_target = portfolio_config["vol_target"]
+sim_start = datetime.date.today() - relativedelta(years=portfolio_config["sim_years"])
 
-# 2. Get account capital
-# account_capital = trade_client.get_account_capital()
-# print(account_capital)
-
-# 3. Get account details
-# account_details = trade_client.get_account_details()
-# print(json.dumps(account_details, indent=4))
-
-# 4. Get account positions
-# account_positions = trade_client.get_account_positions()
-# print(json.dumps(account_positions, indent=4))
-
-# 5. Get account trades
-# account_trades = trade_client.get_account_trades()
-# print(account_trades)
-
-# 6. Get account instruments
-# instruments, fx, cfds, metals = trade_client.get_account_instruments()
-# print(json.dumps(fx, indent=4))
-# for i in fx:
-#     is_tradable = trade_client.is_tradable(i)
-#     print(i, is_tradable)
-
-# for i in fx:
-#     result = trade_client.get_ohlcv(instrument=i, count=100, granularity="D")
-#     exit()
-
-# 7.
-# fx_code = []
-# for pair in fx:
-#     fx_code.append(pair.split("_")[0])
-#     fx_code.append(pair.split("_")[1])
-# fx_codes = set(fx_code)
-
-# config = {"fx_codes": list(fx_codes), "currencies": fx, "cfds": cfds, "metals": metals}
-# with open("config/oan_config.json", "w") as f:
-#     json.dump(config, f, indent=4)
-
-# run the lbom strategy through the driver
-VOL_TARGET = 0.20  # we are targetting 20% annualized vol
-
-# perform simulation for the past 5 years
-sim_start = df.index[-1] - relativedelta(years=5)
+"""
+Subsystem Positioning
+"""
 
 start = Lbmom(
     instruments_config="./subsystems/lbmom/config.json",
-    historical_df=df,
+    historical_df=historical_data,
     simulation_start=sim_start,
-    vol_target=VOL_TARGET,
+    vol_target=vol_target,
 )
-start.get_subsys_pos()
+portfolio_df = start.get_subsys_pos()
