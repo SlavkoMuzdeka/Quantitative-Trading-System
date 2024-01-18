@@ -69,7 +69,7 @@ class Lbmom:
                 )  # fastMA - slowMA
         return historical_data
 
-    def run_simulation(self, historical_data):
+    def run_simulation(self, historical_data, debug=False):
         """
         Init & Pre-process
         """
@@ -194,8 +194,14 @@ class Lbmom:
             portfolio_df.loc[i, "leverage"] = (
                 portfolio_df.loc[i, "nominal"] / portfolio_df.loc[i, "capital"]
             )
-        return portfolio_df
 
-    def get_subsys_pos(self):
-        portfolio_df = self.run_simulation(historical_data=self.historical_df)
-        return portfolio_df
+            if debug:
+                print(portfolio_df.loc[i])
+
+        return portfolio_df, instruments
+
+    def get_subsys_pos(self, debug=False):
+        portfolio_df, instruments = self.run_simulation(
+            historical_data=self.historical_df, debug=debug
+        )
+        return portfolio_df, instruments

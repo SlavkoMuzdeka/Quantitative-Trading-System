@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 
 def get_backtest_day_stats(
@@ -16,7 +15,7 @@ def get_backtest_day_stats(
     nominal_ret = 0
 
     for inst in instruments:
-        previous_holdings = historical_data.loc[date_idx - 1, "{} units".format(inst)]
+        previous_holdings = portfolio_df.loc[date_idx - 1, "{} units".format(inst)]
         if previous_holdings != 0:
             price_change = (
                 historical_data.loc[date, "{} close".format(inst)]
@@ -54,7 +53,7 @@ def get_strat_scalar(portfolio_df, lookback, vol_target, idx, default):
     """
     capital_ret_history = portfolio_df.loc[:idx].dropna().tail(lookback)["capital ret"]
     strat_scaler_history = (
-        portfolio_df.loc[:idx].dropna().tail(lookback)["strat scaler"]
+        portfolio_df.loc[:idx].dropna().tail(lookback)["strat scalar"]
     )
     if len(capital_ret_history) == lookback:  # enough data
         annualized_vol = capital_ret_history.std() * np.sqrt(253)
