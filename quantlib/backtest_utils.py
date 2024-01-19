@@ -13,13 +13,12 @@ def get_backtest_day_stats(
     """
     day_pnl = 0
     nominal_ret = 0
-
     for inst in instruments:
-        previous_holdings = portfolio_df.loc[date_idx - 1, "{} units".format(inst)]
+        previous_holdings = portfolio_df.loc[date_idx - 1, f"{inst} units"]
         if previous_holdings != 0:
             price_change = (
-                historical_data.loc[date, "{} close".format(inst)]
-                - historical_data.loc[date_prev, "{} close".format(inst)]
+                historical_data.loc[date, f"{inst} close"]
+                - historical_data.loc[date_prev, f"{inst} close"]
             )
             dollar_change = unit_val_change(
                 from_prod=inst,
@@ -30,8 +29,8 @@ def get_backtest_day_stats(
             inst_pnl = dollar_change * previous_holdings
             day_pnl += inst_pnl
             nominal_ret += (
-                portfolio_df.loc[date_idx - 1, "{} w".format(inst)]
-                * historical_data.loc[date, "{} % ret".format(inst)]
+                portfolio_df.loc[date_idx - 1, f"{inst} w"]
+                * historical_data.loc[date, f"{inst} % ret"]
             )
     capital_ret = nominal_ret * portfolio_df.loc[date_idx - 1, "leverage"]
     portfolio_df.loc[date_idx, "capital"] = (
@@ -76,7 +75,7 @@ def unit_val_change(from_prod, val_change, historical_data, date):
     else:
         return (
             val_change
-            * historical_data.loc[date, "{}_USD close".format(from_prod.split("_")[1])]
+            * historical_data.loc[date, f"{from_prod.split("_")[1]}_USD close"]
         )
 
 

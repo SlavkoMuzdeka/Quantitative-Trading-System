@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import json
 import quantlib.indicators_cal as indicators_cal
-import quantlib.backtest_utils as bu
+import quantlib.backtest_utils as backtest_utils
 
 """
 # About volatility read this post: 
@@ -52,39 +52,53 @@ class Lsmom:
             self.instruments_config = json.load(f)
 
     def extend_historicals(self, instruments, historical_data):
+        new_historical_data = historical_data.copy()
+
         for inst in instruments:
             # Calculate Average Directional Index (ADX)
-            historical_data["{} adx".format(inst)] = indicators_cal.adx_series(
+            new_historical_data[f"{inst} adx"] = indicators_cal.adx_series(
                 high=historical_data[inst + " high"],
                 low=historical_data[inst + " low"],
                 close=historical_data[inst + " close"],
                 n=14,
             )
+
+            # Create a list to store calculated EMA differences
+            ema_differences = []
+
             # Calculate moving average crossover for each pair
             for pair in self.pairs:
-                historical_data[
-                    "{} ema{}".format(inst, str(pair))
-                ] = indicators_cal.ema_series(
+                ema_difference = indicators_cal.ema_series(
                     series=historical_data[inst + " close"], n=pair[0]
                 ) - indicators_cal.ema_series(
                     series=historical_data[inst + " close"], n=pair[1]
-                )  # fastMA - slowMA
-        return historical_data
+                )
+                ema_differences.append(ema_difference)
+
+            # Concatenate all EMA differences at once
+            ema_difference_df = pd.concat(ema_differences, axis=1)
+            ema_difference_df.columns = [
+                f"{inst} ema{str(pair)}" for pair in self.pairs
+            ]
+
+            # Add the concatenated DataFrame to the new_historical_data
+            new_historical_data = pd.concat(
+                [new_historical_data, ema_difference_df], axis=1
+            )
+
+        return new_historical_data
 
     def run_simulation(self, historical_data, debug=False):
         """
         Init & Pre-process
         """
-        instruments = (
-            self.instruments_config["currencies"]
-            + self.instruments_config["commodities"]
-            + +self.instruments_config["metals"]
-        )
+        instruments = self.instruments_config["instruments"]
 
         # Calculate/pre-process indicators
         historical_data = self.extend_historicals(
             instruments=instruments, historical_data=historical_data
         )
+        historical_data.bfill(inplace=True)
 
         # Perform simulation
         portfolio_df = pd.DataFrame(
@@ -119,10 +133,10 @@ class Lsmom:
             """
             if i != 0:
                 date_prev = portfolio_df.loc[i - 1, "date"]
-                pnl = bu.get_backtest_day_stats(
+                pnl = backtest_utils.get_backtest_day_stats(
                     portfolio_df, instruments, date, date_prev, i, historical_data
                 )
-                strat_scalar = bu.get_strat_scalar(
+                strat_scalar = backtest_utils.get_strat_scalar(
                     portfolio_df, 100, self.vol_target, i, strat_scalar
                 )
 
@@ -175,7 +189,7 @@ class Lsmom:
                     else 0.025
                 )
 
-                dollar_volatility = bu.unit_val_change(
+                dollar_volatility = backtest_utils.unit_val_change(
                     inst, inst_price * percent_ret_vol, historical_data, date
                 )
                 position = (
@@ -183,13 +197,15 @@ class Lsmom:
                 )
                 portfolio_df.loc[i, "{} units".format(inst)] = position
                 nominal_total += abs(
-                    position * bu.unit_dollar_value(inst, historical_data, date)
+                    position
+                    * backtest_utils.unit_dollar_value(inst, historical_data, date)
                 )  # assuming all denominated in same currency
 
             for inst in tradable:
                 units = portfolio_df.loc[i, "{} units".format(inst)]
                 nominal_inst = abs(
-                    units * bu.unit_dollar_value(inst, historical_data, date)
+                    units
+                    * backtest_utils.unit_dollar_value(inst, historical_data, date)
                 )
                 inst_w = nominal_inst / nominal_total
                 portfolio_df.loc[i, "{} w".format(inst)] = inst_w

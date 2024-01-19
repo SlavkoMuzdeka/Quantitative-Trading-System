@@ -9,6 +9,7 @@ import oandapyV20.endpoints.pricing as pricing
 import oandapyV20.endpoints.accounts as accounts
 import oandapyV20.endpoints.positions as positions
 import oandapyV20.endpoints.instruments as instruments
+import oandapyV20.endpoints.transactions as transactions
 
 
 class TradeClient:
@@ -31,9 +32,7 @@ class TradeClient:
                 "account"
             ]
         except Exception as err:
-            raise Exception(
-                "Some err message from account details: {}".format(str(err))
-            )
+            raise Exception(f"Some err message from account details: {str(err)}")
 
     def get_account_instruments(self):
         try:
@@ -61,9 +60,7 @@ class TradeClient:
                     metals.append(inst_name)
             return instruments, currencies, cfds, metals
         except Exception as err:
-            raise Exception(
-                "Some err message from account instruments: {}".format(str(err))
-            )
+            raise Exception(f"Some err message from account instruments: {str(err)}")
 
     def get_account_summary(self):
         try:
@@ -71,17 +68,13 @@ class TradeClient:
                 "account"
             ]
         except Exception as err:
-            raise Exception(
-                "Some err message from account summary: {}".format(str(err))
-            )
+            raise Exception(f"Some err message from account summary: {str(err)}")
 
     def get_account_capital(self):
         try:
             return float(self.get_account_summary()["NAV"])
         except Exception as err:
-            raise Exception(
-                "Some err message from account capital: {}".format(str(err))
-            )
+            raise Exception(f"Some err message from account capital: {str(err)}")
 
     def get_account_positions(self):
         positions_data = self.get_account_details()["positions"]
@@ -97,10 +90,12 @@ class TradeClient:
 
     def get_account_trades(self):
         try:
-            results = self.client.request(trades.OpenTrades(accountID=self.id))
+            results = self.client.request(trades.OpenTrades(accountID=self.id))[
+                "trades"
+            ]
             return results
         except Exception as err:
-            raise Exception("Some err message from account trades: {}".format(str(err)))
+            raise Exception(f"Some err message from account trades: {str(err)}")
 
     def is_tradable(self, inst):
         try:
@@ -110,13 +105,15 @@ class TradeClient:
             is_tradable = res["prices"][0]["tradeable"]
             return is_tradable
         except Exception as err:
-            raise Exception("Some err message from is tradable: {}".format(str(err)))
+            raise Exception(f"Some err message from is tradable: {str(err)}")
 
     def get_account_orders(self):
         pass
 
     def get_endpoint(self, inst):
         pass
+
+    # TODO SUBMIT ORDER
 
     def format_date(self, series):
         yymmdd = series.split("T")[0].split("-")
@@ -141,7 +138,7 @@ class TradeClient:
             ohlc_df["date"] = ohlc_df["date"].apply(lambda x: self.format_date(x))
             return ohlc_df
         except Exception as err:
-            raise Exception("Some err message from get ohlcv: {}".format(str(err)))
+            raise Exception(f"Some err message from get ohlcv: {str(err)}")
 
     def market_order(self, inst, order_config={}):
         pass

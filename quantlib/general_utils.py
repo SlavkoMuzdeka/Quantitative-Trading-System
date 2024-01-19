@@ -1,6 +1,3 @@
-# This is a utility file that allow us to perform simple
-# tasks such as I/O, disk writing, etc.
-
 import pickle
 
 

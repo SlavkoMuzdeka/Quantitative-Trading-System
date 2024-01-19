@@ -8,35 +8,19 @@ import datetime
 
 
 def get_sp500_instruments():
-    """
-    This function provides a conveninet way to retreive the ticker symbols of S&P 500
-    companies from Wikipedia using web scaping
-    """
-    # Send a GET request to the Wikipedia page containing the S&P 500 companies list
     res = requests.get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-    # Create a BeautifulSoup object to parse the HTML content of the page
     soup = BeautifulSoup(res.content, "lxml")
-    # Find the first table on the page containing the list of S&P 500 companies
     table = soup.find_all("table")[0]
-    # Use pandas read_html to extract tables from HTML and convert them to DataFrames
     df = pd.read_html(StringIO(str(table)))
-    # Extract the "Symbol" column from the first DataFrame (assuming it's the S&P 500 list)
     return list(df[0]["Symbol"])
 
 
 def get_sp500_df():
-    """
-    The method fetches historical OHLCV data fro a selected subset of S&P 500 symbols,
-    organize the data and returns a DataFrame along with a list of instruments. The resulting
-    DataFrame has columns uniquely identified by combining the instrument name and OHLCV type
-    """
     symbols = get_sp500_instruments()
     symbols = symbols[:30]
-    # Initialize a dictionary to store OHLCV (Open, High, Low, Close, Volume) data for each symbol
     ohlcvs = {}
-    # Loop through each symbol, retrieve historical data, and store it in the dictionary
     for symbol in symbols:
-        symbol_df = yf.Ticker(symbol).history(period="10y")
+        symbol_df = yf.Ticker(symbol).history(period="5y")
         ohlcvs[symbol] = symbol_df[["Open", "High", "Low", "Close", "Volume"]].rename(
             columns={
                 "Open": "open",
@@ -55,34 +39,22 @@ def get_sp500_df():
     for inst in instruments:
         inst_df = ohlcvs[inst]
         # add an identifier to the columns
-        columns = list(map(lambda x: "{} {}".format(inst, x), inst_df.columns))
+        columns = list(map(lambda x: f"{inst} {x}", inst_df.columns))
         # add the instrument name to each column
-        df[columns] = inst_df
-
+        df = pd.concat(
+            [df, inst_df.rename(columns=dict(zip(inst_df.columns, columns)))], axis=1
+        )
+    df.index.name = "date"
     return df, instruments
 
 
-def format_date(dates):
-    """
-    Function takes a data-like input, extracts the year, month and day and returns a
-    'datetime.date' object representing that date. This can be useful for ensuring
-    consistent object types when dealing with date-related operation in a program
-    """
-    yymmdd = list(map(lambda x: int(x), str(dates).split(" ")[0].split("-")))
-    return datetime.date(yymmdd[0], yymmdd[1], yymmdd[2])
-
-
-# takes an arbitrary dataframe with "inst o/h/l/c/v" and appends data + other numerical stats
-# for use throuhgt the system
 def extend_dataframe(traded, df, fx_codes):
     """
     Function extends a DataFrame containing OHLCV data for multiple instruments by adding
     columns with additional statistics related to percentage returns, return volatility
     and active trading indicators.
     """
-    df.index = pd.Series(df.index).apply(
-        lambda x: format_date(x)
-    )  # puts all the index string dates into datetime object format
+    df.index = pd.Series(df.index).apply(lambda x: format_date(x))
 
     open_cols = list(map(lambda x: str(x) + " open", traded))
     high_cols = list(map(lambda x: str(x) + " high", traded))
@@ -92,34 +64,37 @@ def extend_dataframe(traded, df, fx_codes):
 
     # Create a copy of the DataFrame and select relevant columns
     historical_data = df.copy()
+
     historical_data = historical_data[
         open_cols + high_cols + low_cols + close_cols + volume_cols
     ]
 
-    # Forward fill missing values in the DataFrame
+    # Forward and back fill missing values in the DataFrame
     historical_data.ffill(inplace=True)
-
-    # Back fill missing values in the DataFrame
     historical_data.bfill(inplace=True)
 
     # Iterate through each instrument and calculate additional statistics
     for inst in traded:
-        # Calculate percentage return
-        historical_data["{} % ret".format(inst)] = (
-            historical_data["{} close".format(inst)]
-            / historical_data["{} close".format(inst)].shift(1)
+        # Calculate percentage return (it divides the closing price of the current day by the closing price of the previous day)
+        # Subtraction by 1 is a common practice in financial calculations to express return as a percentage change
+        historical_data[f"{inst} % ret"] = (
+            historical_data[f"{inst} close"] / historical_data[f"{inst} close"].shift(1)
             - 1
         )
 
         # Calculate percentage return volatility using a 25-day rolling standard deviation
-        historical_data["{} % ret vol".format(inst)] = (
-            historical_data["{} % ret".format(inst)].rolling(25).std()
+        # The rolling window is applied to the daily percentage returns and at each position
+        # it considers the previous 25 values, including the current one
+        historical_data[f"{inst} % ret vol"] = (
+            historical_data[f"{inst} % ret"].rolling(25).std()
         )
 
         # Check if the stock is actively traded by comparing closing prices today and yesterday
-        historical_data["{} active".format(inst)] = historical_data[
-            "{} close".format(inst)
-        ] != historical_data["{} close".format(inst)].shift(1)
+        historical_data[f"{inst} active"] = historical_data[
+            f"{inst} close"
+        ] != historical_data[f"{inst} close"].shift(1)
+
+        # TODO FIND OUT WHAT CODE BELOW DOES AND USE DIFFERENT STRING REPRESENTATION (INSTEAD OF FORMAT)
 
         if is_fx(inst, fx_codes):
             inst_rev = "{}_{}".format(inst.split("_")[1], inst.split("_")[0])
@@ -139,6 +114,8 @@ def extend_dataframe(traded, df, fx_codes):
                 "{} close".format(inst_rev)
             ] != historical_data["{} close".format(inst_rev)].shift(1)
 
+    historical_data.ffill(inplace=True)
+    historical_data.bfill(inplace=True)
     return historical_data
 
 
@@ -149,3 +126,38 @@ def is_fx(inst, fx_codes):
         and inst.split("_")[0] in fx_codes
         and inst.split("_")[1] in fx_codes
     )
+
+
+def format_date(dates):
+    yymmdd = list(map(lambda x: int(x), str(dates).split(" ")[0].split("-")))
+    return datetime.date(yymmdd[0], yymmdd[1], yymmdd[2])
+
+
+def get_cryptocurrency_df(crypto_config):
+    ohlcvs = {}
+    for symbol in crypto_config["crypto_tickers"]:
+        symbol_df = yf.Ticker(symbol).history(period="5y")
+        ohlcvs[symbol] = symbol_df[["Open", "High", "Low", "Close", "Volume"]].rename(
+            columns={
+                "Open": "open",
+                "High": "high",
+                "Low": "low",
+                "Close": "close",
+                "Volume": "volume",
+            }
+        )
+    df = pd.DataFrame()
+    df.index.name = "date"
+    instruments = list(ohlcvs.keys())
+
+    # Loop through each instrument, add identifier to columns, and append data to the DataFrame
+    for inst in instruments:
+        inst_df = ohlcvs[inst]
+        # add an identifier to the columns
+        columns = list(map(lambda x: f"{inst} {x}", inst_df.columns))
+        # add the instrument name to each column
+        df = pd.concat(
+            [df, inst_df.rename(columns=dict(zip(inst_df.columns, columns)))], axis=1
+        )
+    df.index.name = "date"
+    return df, instruments

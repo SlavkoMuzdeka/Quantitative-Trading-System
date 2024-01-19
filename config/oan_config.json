@@ -59,7 +59,7 @@
     "JP225_USD",
     "SG30_SGD",
     "DE30_EUR",
-    "JP225Y_JPY"
+    "NL25_EUR"
   ],
   "bonds": [
     "USB30Y_USD",
@@ -68,19 +68,18 @@
     "USB10Y_USD",
     "USB02Y_USD",
     "UK10YB_GBP",
-    "NL25_EUR"
+    "JP225Y_JPY"
   ],
   "commodities": [
     "WHEAT_USD",
     "SUGAR_USD",
     "ESPIX_EUR",
     "WTICO_USD",
-    "XCU_USD",
     "CORN_USD",
     "CHINAH_HKD",
     "SOYBN_USD",
     "BCO_USD",
     "NATGAS_USD"
   ],
-  "metals": ["XAG_USD", "XAU_USD", "XPD_USD", "XPT_USD"]
+  "metals": ["XAG_USD", "XAU_USD", "XPD_USD", "XPT_USD", "XCU_USD"]
 }
