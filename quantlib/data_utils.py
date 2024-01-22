@@ -18,33 +18,7 @@ def get_sp500_instruments():
 def get_sp500_df():
     symbols = get_sp500_instruments()
     symbols = symbols[:30]
-    ohlcvs = {}
-    for symbol in symbols:
-        symbol_df = yf.Ticker(symbol).history(period="5y")
-        ohlcvs[symbol] = symbol_df[["Open", "High", "Low", "Close", "Volume"]].rename(
-            columns={
-                "Open": "open",
-                "High": "high",
-                "Low": "low",
-                "Close": "close",
-                "Volume": "volume",
-            }
-        )
-    # Create an empty DataFrame with the index of the historical data of Amazon (AMZN)
-    df = pd.DataFrame(index=ohlcvs["AMZN"].index)
-    df.index.name = "date"
-    instruments = list(ohlcvs.keys())
-
-    # Loop through each instrument, add identifier to columns, and append data to the DataFrame
-    for inst in instruments:
-        inst_df = ohlcvs[inst]
-        # add an identifier to the columns
-        columns = list(map(lambda x: f"{inst} {x}", inst_df.columns))
-        # add the instrument name to each column
-        df = pd.concat(
-            [df, inst_df.rename(columns=dict(zip(inst_df.columns, columns)))], axis=1
-        )
-    df.index.name = "date"
+    df, instruments = get_df_instruments(symbols)
     return df, instruments
 
 
@@ -94,25 +68,21 @@ def extend_dataframe(traded, df, fx_codes):
             f"{inst} close"
         ] != historical_data[f"{inst} close"].shift(1)
 
-        # TODO FIND OUT WHAT CODE BELOW DOES AND USE DIFFERENT STRING REPRESENTATION (INSTEAD OF FORMAT)
-
         if is_fx(inst, fx_codes):
             inst_rev = "{}_{}".format(inst.split("_")[1], inst.split("_")[0])
-            historical_data["{} close".format(inst_rev)] = (
-                1 / historical_data["{} close".format(inst)]
-            )
-            historical_data["{} % ret".format(inst_rev)] = (
-                historical_data["{} close".format(inst_rev)]
-                / historical_data["{} close".format(inst_rev)].shift(1)
+            historical_data[f"{inst_rev} close"] = 1 / historical_data[f"{inst} close"]
+            historical_data[f"{inst_rev} % ret"] = (
+                historical_data[f"{inst_rev} close"]
+                / historical_data[f"{inst_rev} close"].shift(1)
                 - 1
             )
-            historical_data["{} % ret vol".format(inst_rev)] = (
-                historical_data["{} % ret".format(inst_rev)].rolling(25).std()
+            historical_data[f"{inst_rev} % ret vol"] = (
+                historical_data[f"{inst_rev} % ret"].rolling(25).std()
             )
 
-            historical_data["{} active".format(inst_rev)] = historical_data[
-                "{} close".format(inst_rev)
-            ] != historical_data["{} close".format(inst_rev)].shift(1)
+            historical_data[f"{inst_rev} active"] = historical_data[
+                f"{inst_rev} close"
+            ] != historical_data[f"{inst_rev} close"].shift(1)
 
     historical_data.ffill(inplace=True)
     historical_data.bfill(inplace=True)
@@ -133,9 +103,9 @@ def format_date(dates):
     return datetime.date(yymmdd[0], yymmdd[1], yymmdd[2])
 
 
-def get_cryptocurrency_df(crypto_config):
+def get_df_instruments(symbols):
     ohlcvs = {}
-    for symbol in crypto_config["crypto_tickers"]:
+    for symbol in symbols:
         symbol_df = yf.Ticker(symbol).history(period="5y")
         ohlcvs[symbol] = symbol_df[["Open", "High", "Low", "Close", "Volume"]].rename(
             columns={
@@ -160,4 +130,9 @@ def get_cryptocurrency_df(crypto_config):
             [df, inst_df.rename(columns=dict(zip(inst_df.columns, columns)))], axis=1
         )
     df.index.name = "date"
+    return df, instruments
+
+
+def get_cryptocurrency_df(crypto_config):
+    df, instruments = get_df_instruments(symbols=crypto_config["crypto_tickers"])
     return df, instruments

@@ -92,7 +92,7 @@ class Lsmom:
         """
         Init & Pre-process
         """
-        instruments = self.instruments_config["instruments"]
+        instruments = self.instruments_config["crypto_tickers"]
 
         # Calculate/pre-process indicators
         historical_data = self.extend_historicals(

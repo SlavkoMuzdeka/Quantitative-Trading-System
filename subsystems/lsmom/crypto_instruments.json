@@ -1,0 +1,26 @@
+{
+  "crypto_tickers": [
+    "BTC-USD",
+    "ETH-USD",
+    "LTC-USD",
+    "XMR-USD",
+    "XRP-USD",
+    "ADA-USD",
+    "DOGE-USD",
+    "SOL-USD",
+    "DOT-USD",
+    "ATOM-USD",
+    "TRX-USD",
+    "AVAX-USD",
+    "LINK-USD",
+    "ETC-USD",
+    "FIL-USD",
+    "BCH-USD",
+    "NEAR-USD",
+    "ALGO-USD",
+    "EOS-USD",
+    "FTM-USD",
+    "XTZ-USD",
+    "NEO-USD"
+  ]
+}

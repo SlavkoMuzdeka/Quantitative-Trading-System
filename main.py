@@ -38,205 +38,106 @@ db_instruments = (
 )
 
 
-# def main():
-#     """
-#     Load and Update Database
-#     """
-#     database_df = gu.load_file("./Data/quick_ohlcv.obj")
+def run_strategies(historical_df, path):
+    vol_target = portfolio_config["vol_target"]
+    sim_start = datetime.date.today() - relativedelta(
+        years=portfolio_config["sim_years"]
+    )
 
-#     # database_df = pd.read_excel("./Data/oan_ohlcv.xlsx").set_index("date")
-#     # poll_df = pd.DataFrame()
+    subsystems_config = portfolio_config["subsystems"]["oan"]
+    strats = {}
 
-#     # for db_inst in db_instruments:
-#     #     df = trade_client.get_ohlcv(
-#     #         instrument=db_inst, count=30, granularity="D"
-#     #     ).set_index("date")
-#     #     cols = list(map(lambda x: "{} {}".format(db_inst, x), df.columns))
-#     #     df.columns = cols
-#     #     if len(poll_df) == 0:
-#     #         poll_df[cols] = df
-#     #     else:
-#     #         poll_df = poll_df.combine_first(df)
+    for subsystem in subsystems_config.keys():
+        if subsystem == "lbmom":
+            strat = Lbmom(
+                instruments_config=portfolio_config["instruments_config"][subsystem][
+                    "oan"
+                ],
+                historical_df=historical_df,
+                simulation_start=sim_start,
+                vol_target=vol_target,
+            )
+        elif subsystem == "lsmom":
+            strat = Lsmom(
+                instruments_config=portfolio_config["instruments_config"][subsystem][
+                    "oan"
+                ],
+                historical_df=historical_df,
+                simulation_start=sim_start,
+                vol_target=vol_target,
+            )
+        else:
+            print("Unknown strategy")
+            exit()
 
-#     # database_df = database_df.loc[: poll_df.index[0]][:-1]
-#     # database_df = database_df._append(poll_df)
-#     # database_df.to_excel("./Data/oan_ohlcv.xlsx")
+        strats[subsystem] = strat
 
-#     historical_data = du.extend_dataframe(
-#         traded=db_instruments, df=database_df, fx_codes=brokerage_config["fx_codes"]
-#     )
-
-#     """
-#     Risk Parameters
-#     """
-#     vol_target = portfolio_config["vol_target"]
-#     sim_start = datetime.date.today() - relativedelta(
-#         years=portfolio_config["sim_years"]
-#     )
-
-#     """
-#     Get Existing Positions, Capital etc.
-#     """
-#     capital = trade_client.get_account_capital()
-#     positions = trade_client.get_account_positions()
-#     print("--------------------------------------------------")
-#     print(capital, positions)
-
-#     """
-#     Subsystem Positioning
-#     """
-#     subsystems_config = portfolio_config["subsystems"]["oan"]
-#     strats = {}
-
-#     for subsystem in subsystems_config.keys():
-#         if subsystem == "lbmom":
-#             strat = Lbmom(
-#                 instruments_config=portfolio_config["instruments_config"][subsystem][
-#                     "oan"
-#                 ],
-#                 historical_df=historical_data,
-#                 simulation_start=sim_start,
-#                 vol_target=vol_target,
-#             )
-#             print(strat.instruments_config)
-#         elif subsystem == "lsmom":
-#             strat = Lsmom(
-#                 instruments_config=portfolio_config["instruments_config"][subsystem][
-#                     "oan"
-#                 ],
-#                 historical_df=historical_data,
-#                 simulation_start=sim_start,
-#                 vol_target=vol_target,
-#             )
-#         else:
-#             print("Unknown strategy")
-#             exit()
-#         strats[subsystem] = strat
-
-#     for k, v in strats.items():
-#         # k, v pair is (subsystem, strat_object)
-#         strat_db, strat_inst = v.get_subsys_pos(debug=True)
-#         print(strat_db, strat_inst)
+    for k, v in strats.items():
+        # k, v pair is (subsystem, strat_object)
+        strat_db, strat_inst = v.get_subsys_pos()
+        strat_db.to_excel(f"{path}/{k}_strat.xlsx")
 
 
 def main():
     """
     THIS CODE IS FOR WORKING WITH SP500 instruments
 
-    1. In portfolio_config.json change the path for config files, both, for lbmom and lsmom, so
-    if you want to train strategies on sp500 instruments, set inside "instruments_config" this:
-
-        "lbmom": {"oan": "./subsystems/lbmom/sp500_instruments.json"},
-        "lsmom": {"oan": "./subsystems/lsmom/sp500_instruments.json"}
-
-    and in subsys for, both, lbmom and lsmom we should inside 'run_simulation()' method set
+    1. In subsys for, both, lbmom and lsmom we should inside 'run_simulation()' method set
     variable instruments to this -> instruments = self.instruments_config["instruments"]
     """
     # historical_df = general_utils.load_file("./Data/sp500/historical_df.obj")
+    # run_strategies(historical_df=historical_df, path="./Data/sp500")
 
-    # vol_target = portfolio_config["vol_target"]
-    # sim_start = datetime.date.today() - relativedelta(
-    #     years=portfolio_config["sim_years"]
-    # )
+    """
+    THIS CODE IS FOR WORKING WITH OANDA BROKER
+    1. In subsys for, both, lbmom and lsmom we should inside 'run_simulation()' method set
+    variable instruments to this -> instruments = self.instruments_config["indices"] + self.instruments_config['bonds'] (for our example)
 
-    # subsystems_config = portfolio_config["subsystems"]["oan"]
-    # strats = {}
+    2. If we want to have updated data, we should follow instructions below
+    """
 
-    # for subsystem in subsystems_config.keys():
-    #     if subsystem == "lbmom":
-    #         strat = Lbmom(
-    #             instruments_config=portfolio_config["instruments_config"][subsystem][
-    #                 "oan"
-    #             ],
-    #             historical_df=historical_df,
-    #             simulation_start=sim_start,
-    #             vol_target=vol_target,
-    #         )
-    #     elif subsystem == "lsmom":
-    #         strat = Lsmom(
-    #             instruments_config=portfolio_config["instruments_config"][subsystem][
-    #                 "oan"
-    #             ],
-    #             historical_df=historical_df,
-    #             simulation_start=sim_start,
-    #             vol_target=vol_target,
-    #         )
+    # Comment this out, and uncomment lines below in production
+    # database_df = general_utils.load_file("./Data/oanda/quick_ohlcv.obj")
+
+    # database_df = pd.read_excel("./Data/oanda/oan_ohlcv.xlsx").set_index("date")
+    # poll_df = pd.DataFrame()
+
+    # for db_inst in db_instruments:
+    #     df = trade_client.get_ohlcv(
+    #         instrument=db_inst, count=30, granularity="D"
+    #     ).set_index("date")
+    #     cols = list(map(lambda x: f"{db_inst} {x}", df.columns))
+
+    #     df.columns = cols
+    #     if len(poll_df) == 0:
+    #         poll_df[cols] = df
     #     else:
-    #         print("Unknown strategy")
-    #         exit()
+    #         poll_df = poll_df.combine_first(df)
 
-    #     strats[subsystem] = strat
+    # database_df = database_df.loc[: poll_df.index[0]][:-1]
+    # database_df = database_df._append(poll_df)
+    # database_df.to_excel("./Data/oanda/oan_ohlcv.xlsx")
 
-    # for k, v in strats.items():
-    #     # k, v pair is (subsystem, strat_object)
-    #     strat_db, strat_inst = v.get_subsys_pos()
-    #     strat_db.to_excel(f"./Data/sp500/{k}_strat.xlsx")
+    """
+    Extend dataframe with numerical statistics required for backtesting and alpha generation
+    """
 
-    # THIS CODE IS FOR WORKING WITH OANDA BROKER
-
-    dataframes = general_utils.load_file("./Data/oanda/dataframes.obj")
-    poll_df = pd.DataFrame()
-
-    for db_inst in db_instruments:
-        df = dataframes[db_inst]
-        df.set_index("date", inplace=True)
-        cols = list(map(lambda x: f"{db_inst} {x}", df.columns))
-
-        df.columns = cols
-        if len(poll_df) == 0:
-            poll_df[cols] = df
-        else:
-            poll_df = poll_df.combine_first(df)
-        # df_copy = df.copy()
-        # df_copy.columns = cols
-        # poll_df = pd.concat([poll_df, df_copy], axis=1)
-    # poll_df.bfill(inplace=True)
-    # poll_df.ffill(inplace=True)
-    poll_df.to_excel("./Data/oanda/oan_ohlcv.xlsx")
-
-    # TASK
-    # (df, instruments) = general_utils.load_file("./Data/crypto_data.obj")
-    # print(df)
-    # exit()
-    # historical_df = general_utils.load_file("./Data/crypto_hist_data.obj")
-
-    # vol_target = portfolio_config["vol_target"]
-    # sim_start = datetime.date.today() - relativedelta(
-    #     years=portfolio_config["sim_years"]
+    # Because we are trading instruments from different currencies (denominated in different),
+    # we need to do some FX conversion, so we will add more information required for fx conversion (we added fx_codes argument)
+    # historical_data = data_utils.extend_dataframe(
+    #     traded=db_instruments, df=database_df, fx_codes=brokerage_config["fx_codes"]
     # )
+    # run_strategies(historical_df=historical_data, path="./Data/oanda")
 
-    # subsystems_config = portfolio_config["subsystems"]["oan"]
-    # strats = {}
+    """
+    THIS CODE IS FOR WORKING WITH CRYPTO TICKERS
 
-    # for subsystem in subsystems_config.keys():
-    #     if subsystem == "lbmom":
-    #         strat = Lbmom(
-    #             instruments_config=portfolio_config["instruments_config"][subsystem][
-    #                 "oan"
-    #             ],
-    #             historical_df=historical_data,
-    #             simulation_start=sim_start,
-    #             vol_target=vol_target,
-    #         )
-    #         print(strat.instruments_config)
-    #     elif subsystem == "lsmom":
-    #         strat = Lsmom(
-    #             instruments_config=portfolio_config["instruments_config"][subsystem][
-    #                 "oan"
-    #             ],
-    #             historical_df=historical_data,
-    #             simulation_start=sim_start,
-    #             vol_target=vol_target,
-    #         )
-    #     else:
-    #         print("Unknown strategy")
-    #         exit()
-    #     strats[subsystem] = strat
+    1. In subsys for, both, lbmom and lsmom we should inside 'run_simulation()' method set
+    variable instruments to this -> instruments = self.instruments_config["crypto_tickers"] + self.instruments_config['crypto_tickers'] (for our example)
 
-    # for k, v in strats.items():
-    #     # k, v pair is (subsystem, strat_object)
-    #     strat_db, strat_inst = v.get_subsys_pos(debug=True)
-    #     print(strat_db, strat_inst)
+    """
+    historical_df = general_utils.load_file("./Data/crypto/historical_df.obj")
+    run_strategies(historical_df=historical_df, path="./Data/crypto")
 
 
 if __name__ == "__main__":

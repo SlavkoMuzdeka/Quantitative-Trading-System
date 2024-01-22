@@ -1,37 +1,28 @@
 {
-  "currencies": [
-    "USD_CHF",
-    "USD_THB",
-    "USD_JPY",
-    "NZD_USD",
-    "USD_SGD",
-    "USD_CAD",
-    "AUD_USD",
-    "USD_TRY",
-    "USD_NOK",
-    "USD_CNH",
-    "USD_PLN",
-    "USD_ZAR",
-    "USD_CZK",
-    "USD_DKK",
-    "USD_SEK",
-    "GBP_USD",
-    "USD_MXN",
-    "USD_HUF",
-    "USD_HKD",
-    "EUR_USD"
+  "indices": [
+    "FR40_EUR",
+    "US30_USD",
+    "UK100_GBP",
+    "CH20_CHF",
+    "CN50_USD",
+    "US2000_USD",
+    "HK33_HKD",
+    "SPX500_USD",
+    "NAS100_USD",
+    "AU200_AUD",
+    "EU50_EUR",
+    "JP225_USD",
+    "SG30_SGD",
+    "DE30_EUR",
+    "NL25_EUR"
   ],
-  "commodities": [
-    "WHEAT_USD",
-    "SUGAR_USD",
-    "ESPIX_EUR",
-    "WTICO_USD",
-    "XCU_USD",
-    "CORN_USD",
-    "CHINAH_HKD",
-    "SOYBN_USD",
-    "BCO_USD",
-    "NATGAS_USD"
-  ],
-  "metals": ["XAG_USD", "XAU_USD", "XPD_USD", "XPT_USD"]
+  "bonds": [
+    "USB30Y_USD",
+    "USB05Y_USD",
+    "DE10YB_EUR",
+    "USB10Y_USD",
+    "USB02Y_USD",
+    "UK10YB_GBP",
+    "JP225Y_JPY"
+  ]
 }

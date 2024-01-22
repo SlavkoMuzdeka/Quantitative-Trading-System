@@ -91,7 +91,7 @@ class Lbmom:
         Init & Pre-process
         """
 
-        instruments = self.instruments_config["instruments"]
+        instruments = self.instruments_config["crypto_tickers"]
         # Calculate/pre-process indicators
         historical_data = self.extend_historicals(
             instruments=instruments, historical_data=historical_data
@@ -207,6 +207,8 @@ class Lbmom:
 
             if debug:
                 print(portfolio_df.loc[i])
+
+        portfolio_df.to_excel("see.xlsx")
 
         return portfolio_df, instruments
 

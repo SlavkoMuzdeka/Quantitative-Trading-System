@@ -3,10 +3,10 @@
   "vol_target": 0.25,
   "instruments_config": {
     "lbmom": {
-      "oan": "./subsystems/lbmom/oan_instruments.json"
+      "oan": "./subsystems/lbmom/crypto_instruments.json"
     },
     "lsmom": {
-      "oan": "./subsystems/lsmom/oan_instruments.json"
+      "oan": "./subsystems/lsmom/crypto_instruments.json"
     }
   },
   "subsystems": {

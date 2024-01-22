@@ -1,12 +1,12 @@
 {
   "indices": [
-    "HK33_HKD",
     "FR40_EUR",
     "US30_USD",
     "UK100_GBP",
     "CH20_CHF",
     "CN50_USD",
     "US2000_USD",
+    "HK33_HKD",
     "SPX500_USD",
     "NAS100_USD",
     "AU200_AUD",
@@ -14,7 +14,7 @@
     "JP225_USD",
     "SG30_SGD",
     "DE30_EUR",
-    "JP225Y_JPY"
+    "NL25_EUR"
   ],
   "bonds": [
     "USB30Y_USD",
@@ -23,6 +23,6 @@
     "USB10Y_USD",
     "USB02Y_USD",
     "UK10YB_GBP",
-    "NL25_EUR"
+    "JP225Y_JPY"
   ]
 }
