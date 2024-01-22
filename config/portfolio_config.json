@@ -3,14 +3,26 @@
   "vol_target": 0.25,
   "instruments_config": {
     "lbmom": {
-      "oan": "./subsystems/lbmom/crypto_instruments.json"
+      "sp500": "./subsystems/lbmom/sp500_instruments.json",
+      "oan": "./subsystems/lbmom/oan_instruments.json",
+      "crypto": "./subsystems/lbmom/crypto_instruments.json"
     },
     "lsmom": {
-      "oan": "./subsystems/lsmom/crypto_instruments.json"
+      "sp500": "./subsystems/lbmom/sp500_instruments.json",
+      "oan": "./subsystems/lbmom/oan_instruments.json",
+      "crypto": "./subsystems/lbmom/crypto_instruments.json"
     }
   },
   "subsystems": {
+    "sp500": {
+      "lbmom": 0.5,
+      "lsmom": 0.5
+    },
     "oan": {
+      "lbmom": 0.5,
+      "lsmom": 0.5
+    },
+    "crypto": {
       "lbmom": 0.5,
       "lsmom": 0.5
     }

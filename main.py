@@ -38,20 +38,20 @@ db_instruments = (
 )
 
 
-def run_strategies(historical_df, path):
+def run_strategies(historical_df, path, instruments_type):
     vol_target = portfolio_config["vol_target"]
     sim_start = datetime.date.today() - relativedelta(
         years=portfolio_config["sim_years"]
     )
 
-    subsystems_config = portfolio_config["subsystems"]["oan"]
+    subsystems_config = portfolio_config["subsystems"][instruments_type]
     strats = {}
 
     for subsystem in subsystems_config.keys():
         if subsystem == "lbmom":
             strat = Lbmom(
                 instruments_config=portfolio_config["instruments_config"][subsystem][
-                    "oan"
+                    instruments_type
                 ],
                 historical_df=historical_df,
                 simulation_start=sim_start,
@@ -60,7 +60,7 @@ def run_strategies(historical_df, path):
         elif subsystem == "lsmom":
             strat = Lsmom(
                 instruments_config=portfolio_config["instruments_config"][subsystem][
-                    "oan"
+                    instruments_type
                 ],
                 historical_df=historical_df,
                 simulation_start=sim_start,
@@ -86,7 +86,9 @@ def main():
     variable instruments to this -> instruments = self.instruments_config["instruments"]
     """
     # historical_df = general_utils.load_file("./Data/sp500/historical_df.obj")
-    # run_strategies(historical_df=historical_df, path="./Data/sp500")
+    # run_strategies(
+    #     historical_df=historical_df, path="./Data/sp500", instruments_type="sp500"
+    # )
 
     """
     THIS CODE IS FOR WORKING WITH OANDA BROKER
@@ -127,7 +129,9 @@ def main():
     # historical_data = data_utils.extend_dataframe(
     #     traded=db_instruments, df=database_df, fx_codes=brokerage_config["fx_codes"]
     # )
-    # run_strategies(historical_df=historical_data, path="./Data/oanda")
+    # run_strategies(
+    #     historical_df=historical_data, path="./Data/oanda", instruments_type="oan"
+    # )
 
     """
     THIS CODE IS FOR WORKING WITH CRYPTO TICKERS
@@ -137,7 +141,9 @@ def main():
 
     """
     historical_df = general_utils.load_file("./Data/crypto/historical_df.obj")
-    run_strategies(historical_df=historical_df, path="./Data/crypto")
+    run_strategies(
+        historical_df=historical_df, path="./Data/crypto", instruments_type="crypto"
+    )
 
 
 if __name__ == "__main__":

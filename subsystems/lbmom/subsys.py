@@ -136,7 +136,6 @@ class Lbmom:
                     portfolio_df, 100, self.vol_target, i, strat_scalar
                 )
             portfolio_df.loc[i, "strat scalar"] = strat_scalar
-
             """
             Get Positions for Traded Instruments, Assign 0 to Non-Traded
             """
@@ -179,6 +178,7 @@ class Lbmom:
                 dollar_volatility = backtest_utils.unit_val_change(
                     inst, inst_price * percent_ret_vol, historical_data, date
                 )
+
                 position = (
                     strat_scalar * forecast * position_vol_target / dollar_volatility
                 )
@@ -187,7 +187,6 @@ class Lbmom:
                     position
                     * backtest_utils.unit_dollar_value(inst, historical_data, date)
                 )  # assuming all denominated in same currency
-
             for inst in tradable:
                 units = portfolio_df.loc[i, f"{inst} units"]
                 nominal_inst = abs(
