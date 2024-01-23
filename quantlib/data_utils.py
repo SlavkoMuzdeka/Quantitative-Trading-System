@@ -12,14 +12,19 @@ def get_sp500_instruments():
     soup = BeautifulSoup(res.content, "lxml")
     table = soup.find_all("table")[0]
     df = pd.read_html(StringIO(str(table)))
+
     return list(df[0]["Symbol"])
 
 
 def get_sp500_df():
-    symbols = get_sp500_instruments()
-    symbols = symbols[:30]
-    df, instruments = get_df_instruments(symbols)
-    return df, instruments
+    symbols = get_sp500_instruments()[:30]
+    return get_df(symbols, index_ticker="AMZN", period="5y")
+
+
+def get_crypto_df(crypto_config):
+    return get_df(
+        symbols=crypto_config["crypto_tickers"], index_ticker="BTC-USD", period="5y"
+    )
 
 
 def extend_dataframe(traded, df, fx_codes):
@@ -36,7 +41,6 @@ def extend_dataframe(traded, df, fx_codes):
     close_cols = list(map(lambda x: str(x) + " close", traded))
     volume_cols = list(map(lambda x: str(x) + " volume", traded))
 
-    # Create a copy of the DataFrame and select relevant columns
     historical_data = df.copy()
 
     historical_data = historical_data[
@@ -83,8 +87,6 @@ def extend_dataframe(traded, df, fx_codes):
             historical_data[f"{inst_rev} active"] = historical_data[
                 f"{inst_rev} close"
             ] != historical_data[f"{inst_rev} close"].shift(1)
-
-    historical_data.ffill(inplace=True)
     historical_data.bfill(inplace=True)
     return historical_data
 
@@ -103,10 +105,11 @@ def format_date(dates):
     return datetime.date(yymmdd[0], yymmdd[1], yymmdd[2])
 
 
-def get_df_instruments(symbols):
+def get_df(symbols, index_ticker, period="1y"):
     ohlcvs = {}
     for symbol in symbols:
-        symbol_df = yf.Ticker(symbol).history(period="5y")
+        symbol_df = yf.Ticker(symbol).history(period=period)
+
         ohlcvs[symbol] = symbol_df[["Open", "High", "Low", "Close", "Volume"]].rename(
             columns={
                 "Open": "open",
@@ -116,23 +119,17 @@ def get_df_instruments(symbols):
                 "Volume": "volume",
             }
         )
-    df = pd.DataFrame()
+
+    df = pd.DataFrame(index=ohlcvs[index_ticker].index)
     df.index.name = "date"
     instruments = list(ohlcvs.keys())
 
-    # Loop through each instrument, add identifier to columns, and append data to the DataFrame
     for inst in instruments:
         inst_df = ohlcvs[inst]
-        # add an identifier to the columns
         columns = list(map(lambda x: f"{inst} {x}", inst_df.columns))
-        # add the instrument name to each column
         df = pd.concat(
             [df, inst_df.rename(columns=dict(zip(inst_df.columns, columns)))], axis=1
         )
     df.index.name = "date"
-    return df, instruments
 
-
-def get_cryptocurrency_df(crypto_config):
-    df, instruments = get_df_instruments(symbols=crypto_config["crypto_tickers"])
     return df, instruments

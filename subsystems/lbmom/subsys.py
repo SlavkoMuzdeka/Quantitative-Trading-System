@@ -61,7 +61,6 @@ class Lbmom:
                 n=14,
             )
 
-            # Create a list to store calculated EMA differences
             ema_differences = []
 
             # Calculate moving average crossover for each pair
@@ -96,7 +95,7 @@ class Lbmom:
         historical_data = self.extend_historicals(
             instruments=instruments, historical_data=historical_data
         )
-        historical_data.bfill(inplace=True)
+        # historical_data.bfill(inplace=True)
 
         # Perform simulation
         portfolio_df = pd.DataFrame(
@@ -206,8 +205,6 @@ class Lbmom:
 
             if debug:
                 print(portfolio_df.loc[i])
-
-        portfolio_df.to_excel("see.xlsx")
 
         return portfolio_df, instruments
 

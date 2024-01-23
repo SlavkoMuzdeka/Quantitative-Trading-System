@@ -98,7 +98,7 @@ class Lsmom:
         historical_data = self.extend_historicals(
             instruments=instruments, historical_data=historical_data
         )
-        historical_data.bfill(inplace=True)
+        # historical_data.bfill(inplace=True)
 
         # Perform simulation
         portfolio_df = pd.DataFrame(

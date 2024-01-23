@@ -1,4 +1,4 @@
 env
 __pycache__
-libraries
 config/auth_config.json
+.ipynb_checkpoints
